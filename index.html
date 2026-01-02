@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Tavla Ligi</title>
+<style>
+body{font-family:Arial;background:#f4f4f4;padding:20px}
+h2,h3{text-align:center}
+.card{background:#fff;padding:15px;margin-bottom:20px;border-radius:8px;box-shadow:0 2px 6px rgba(0,0,0,.1)}
+select,button{padding:6px;margin:4px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{border:1px solid #ccc;padding:6px;text-align:center}
+th{background:#eee}
+.small{font-size:12px;color:#666}
+label{margin-right:10px}
+.win{background:#dff5e1}
+.lose{background:#f8d7da}
+</style>
+</head>
+<body>
+
+<h2>Tavla Ligi</h2>
+
+<div class="card">
+<h3>Yeni Maç Kaydı</h3>
+Kazanan:
+<select id="winner"></select>
+Kaybeden:
+<select id="loser"></select>
+<br>
+
+<label>
+ <input type="checkbox" id="zeroWin" onchange="toggleChecks(this)">
+ Sıfıra karşı
+</label>
+
+<label>
+ <input type="checkbox" id="sevenSix" onchange="toggleChecks(this)">
+ 7-6 biten maç
+</label>
+
+<br>
+<button onclick="addMatch()">Kaydet</button>
+<button onclick="undo()">Geri Al</button>
+<button onclick="resetAll()">Sıfırla</button>
+</div>
+
+<div class="card">
+<h3>Lig Tablosu – Oyun & Galibiyet Performansı (K = 25)</h3>
+<table>
+<thead>
+<tr>
+<th>Oyuncu</th><th>O</th><th>G</th><th>M</th><th>Oyun Sayısı ve Galibiyet Yüzdesi Performans Sonucu</th>
+</tr>
+</thead>
+<tbody id="league"></tbody>
+</table>
+</div>
+
+<div class="card">
+<h3>Birebir Maçlar</h3>
+<table id="h2h"></table>
+<p class="small">Hücre: Galibiyet / Mağlubiyet</p>
+</div>
+
+<div class="card">
+<h3>Son Maçlar</h3>
+<ul id="recent"></ul>
+</div>
+
+<script>
+const K = 25;
+const players = ["Aykut","Eser","Gongo","Arap","Omer","Cihan"];
+let matches = JSON.parse(localStorage.getItem("matches")) || [];
+
+function toggleChecks(chk){
+ if(chk.id==="zeroWin" && chk.checked)
+  document.getElementById("sevenSix").checked=false;
+ if(chk.id==="sevenSix" && chk.checked)
+  document.getElementById("zeroWin").checked=false;
+}
+
+function save(){ localStorage.setItem("matches", JSON.stringify(matches)); }
+
+function addMatch(){
+ const w = winner.value;
+ const l = loser.value;
+ if(w===l){ alert("Aynı oyuncu seçilemez"); return; }
+
+ matches.push({
+  w,l,
+  zero: zeroWin.checked,
+  sevenSix: sevenSix.checked,
+  t:new Date().toLocaleString("tr-TR")
+ });
+
+ zeroWin.checked=false;
+ sevenSix.checked=false;
+ save(); render();
+}
+
+function undo(){ matches.pop(); save(); render(); }
+
+function resetAll(){
+ if(confirm("Tüm kayıtlar silinsin mi?")){
+  matches=[]; save(); render();
+ }
+}
+
+function calc(){
+ let s={}, h2h={};
+ players.forEach(a=>{
+  s[a]={O:0,G:0,M:0};
+  h2h[a]={};
+  players.forEach(b=>h2h[a][b]={G:0,M:0});
+ });
+
+ matches.forEach(m=>{
+  let winG = m.zero ? 1.5 : 1;
+  let loseG = m.sevenSix ? 0.25 : 0;
+
+  s[m.w].G += winG;
+  s[m.l].G += loseG;
+
+  s[m.l].M += 1;
+
+  s[m.w].O += 1;
+  s[m.l].O += 1;
+
+  h2h[m.w][m.l].G += winG;
+  h2h[m.l][m.w].G += loseG;
+  h2h[m.l][m.w].M += 1;
+ });
+
+ return {s,h2h};
+}
+
+function render(){
+ winner.innerHTML = loser.innerHTML =
+  players.map(p=>`<option>${p}</option>`).join("");
+
+ const data = calc();
+ const s = data.s;
+ const h2hData = data.h2h;
+
+ let rows = players.map(p=>{
+  let o=s[p];
+  let perf = o.O ? (o.G/o.O*100)*(1+o.O/K) : 0;
+  return {p,...o,perf};
+ }).sort((a,b)=>b.perf-a.perf);
+
+ league.innerHTML = rows.map(r=>`
+  <tr>
+   <td>${r.p}</td>
+   <td>${r.O}</td>
+   <td>${r.G.toFixed(2)}</td>
+   <td>${r.M}</td>
+   <td>${r.perf.toFixed(2)}</td>
+  </tr>`).join("");
+
+ let head = `<tr><th></th>${players.map(p=>`<th>${p}</th>`).join("")}</tr>`;
+ let body = players.map(a=>`
+  <tr><th>${a}</th>
+  ${players.map(b=>{
+   if(a===b) return `<td>—</td>`;
+   let x=h2hData[a][b].G;
+   let y=h2hData[b][a].G;
+   let cls = x>y ? "win" : x<y ? "lose" : "";
+   return `<td class="${cls}">${x.toFixed(2)} / ${y.toFixed(2)}</td>`;
+  }).join("")}
+  </tr>
+ `).join("");
+
+ document.getElementById("h2h").innerHTML = head + body;
+
+ recent.innerHTML = matches.slice(-10).reverse()
+  .map(m=>`<li>${m.t}: ${m.w} - ${m.l}${
+   m.zero?" (Sıfıra karşı)":
+   m.sevenSix?" (7-6)":""}</li>`).join("");
+}
+
+render();
+</script>
+
+</body>
+</html>
