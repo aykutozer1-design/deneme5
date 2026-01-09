@@ -43,6 +43,8 @@ Kaybeden:
 <button onclick="addMatch()">Kaydet</button>
 <button onclick="undo()">Geri Al</button>
 <button onclick="resetAll()">Sıfırla</button>
+<button onclick="convertArap()">Arap → Mehmet Dönüştür</button>
+
 </div>
 
 <div class="card">
@@ -184,3 +186,15 @@ render();
 
 </body>
 </html>
+
+function convertArap(){
+ if(!confirm("Arap ismi Mehmet olarak değiştirilecek. Emin misin?")) return;
+
+ let m = JSON.parse(localStorage.getItem("matches")) || [];
+ m.forEach(x=>{
+  if(x.w==="Arap") x.w="Mehmet";
+  if(x.l==="Arap") x.l="Mehmet";
+ });
+ localStorage.setItem("matches", JSON.stringify(m));
+ location.reload();
+}
