@@ -180,31 +180,22 @@ function render(){
    m.zero?" (Sıfıra karşı)":
    m.sevenSix?" (7-6)":""}</li>`).join("");
 }
-
-render();
-</script>
-
-</body>
-</html>
-
 function convertArap(){
- let m = JSON.parse(localStorage.getItem("matches"));
- if(!m || m.length===0){
-  alert("Hiç kayıt bulunamadı.");
-  return;
- }
-
+ let m = JSON.parse(localStorage.getItem("matches")) || [];
  let count = 0;
+
  m.forEach(x=>{
-  if(x.w && x.w.trim()==="Arap"){
-    x.w="Mehmet"; count++;
-  }
-  if(x.l && x.l.trim()==="Arap"){
-    x.l="Mehmet"; count++;
-  }
+  if(x.w==="Arap"){ x.w="Mehmet"; count++; }
+  if(x.l==="Arap"){ x.l="Mehmet"; count++; }
  });
 
  localStorage.setItem("matches", JSON.stringify(m));
  alert(count + " kayıt Mehmet olarak güncellendi.");
  location.reload();
 }
+
+render();
+</script>
+
+</body>
+</html>
