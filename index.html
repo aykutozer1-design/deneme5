@@ -180,19 +180,6 @@ function render(){
    m.zero?" (Sıfıra karşı)":
    m.sevenSix?" (7-6)":""}</li>`).join("");
 }
-function convertArap(){
- let m = JSON.parse(localStorage.getItem("matches")) || [];
- let count = 0;
-
- m.forEach(x=>{
-  if(x.w==="Arap"){ x.w="Mehmet"; count++; }
-  if(x.l==="Arap"){ x.l="Mehmet"; count++; }
- });
-
- localStorage.setItem("matches", JSON.stringify(m));
- alert(count + " kayıt Mehmet olarak güncellendi.");
- location.reload();
-}
 
 render();
 </script>
